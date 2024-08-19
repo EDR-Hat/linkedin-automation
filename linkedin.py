@@ -283,7 +283,7 @@ def get_all_job_links(browser):
     listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
     return [x.get_attribute('href') for x in listofjobs]
 
-def apply_easy_job(browser, url, excluded_companies):
+def apply_easy_job(browser, url, excluded_companies, pause=False):
     browser.get(url)
     
     for y in range(10):
@@ -349,7 +349,7 @@ def apply_easy_job(browser, url, excluded_companies):
                         questions = entry_upper_elem.find_elements(By.TAG_NAME, 'label')
                         if len(input_boxes) == 1:
                             if input_boxes[0].get_attribute('class').find('text-input--input') != -1:
-                                if error.text.find('between') != -1 and len(input_boxes) == 1:
+                                if error.text.find('between') != -1:
                                     entry = error.text.split('between')[1].split('and')[0]
                                     input_boxes[0].send_keys(entry)
                                 elif error.text == 'Please enter a valid answer':
@@ -358,8 +358,33 @@ def apply_easy_job(browser, url, excluded_companies):
                                         input_boxes[0].send_keys('1')
                                     elif query.find('notice') != -1:
                                         input_boxes[0].send_keys('2 weeks')
+                                    elif query.find('work authorization') != -1 and query.find('legally') != -1 and query.find('legally') != -1:
+                                        input_boxes[0].send_keys('no')
+                                    elif query.find('python') != -1 and query.find('exp') != -1:
+                                        input_boxes[0].send_keys('4')
                                     else:
                                         print('unrecorded answer for:', query, url)
+                                        return False
+                                elif error.text == 'Enter a decimal number larger than 0.0':
+                                    qs = questions[0].text.lower()
+                                    #need to make a better function for this than an if else branch
+                                    if qs.find('salary') != -1:
+                                        input_boxes[0].send_keys('1.0')
+                                    elif qs.find('travel') != -1 and qs.find('percentage') != -1:
+                                        input_boxes[0].send_keys('20.0')
+                                    elif qs.find('python') != -1 and qs.find('exp') != -1:
+                                        input_boxes[0].send_keys('4.0')
+                                    elif qs.find('golang') != -1 and qs.find('exp') != -1:
+                                        print('required exp above what i have')
+                                        return True
+                                    elif qs.find('cxone') != -1 and qs.find('exp') != -1:
+                                        print('required exp above what i have')
+                                        return True
+                                    elif qs.find('front end') != -1 and qs.find('exp') != -1:
+                                        print('required exp above what i have')
+                                        return True
+                                    else:
+                                        print('question for this error', len(questions), [x.text for x in questions])
                                         return False
                                 else:
                                     print('len of 1 with different error', url)
@@ -377,6 +402,7 @@ def apply_easy_job(browser, url, excluded_companies):
                         elif len(input_boxes) == 2:
                             print(error.text)
                             print(len(input_boxes), [x.text for x in input_boxes])
+                            input()
                             #need to get text for element to check for H1B questions
                             #also need to line up the labels
                             #input_boxes[0].send_keys(Keys.SPACE)
@@ -384,7 +410,8 @@ def apply_easy_job(browser, url, excluded_companies):
                             return False
                         if len(select_boxes) == 1:
                             options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
-                            if len(options) == 3 or len(options) == 2:
+                            qs = questions[0].text.lower()
+                            if qs.find('vaccination') != -1 and qs.find('covid'):
                                 clicked = False
                                 for selection in options:
                                     if selection.text.lower().find('yes') != -1:
@@ -397,12 +424,29 @@ def apply_easy_job(browser, url, excluded_companies):
                                     print('no option marked yes', url)
                                     print('options', len(options), [x.text for x in options])
                                     return False
+                            elif questions[0].text.find('OPT') != -1:
+                                clicked = False
+                                for selection in options:
+                                    if selection.text.lower().find('no') != -1:
+                                        if not selection.is_displayed():
+                                            selection.location_once_scrolled_into_view
+                                        selection.click()
+                                        clicked = True
+                                        break
+                                if not clicked:
+                                    print('no option marked yes', url)
+                                    print('options', len(options), [x.text for x in options])
+                                    return False
                             else:
-                                print('length of options is over 3 or 2', url)
+                                print('unaccounted for question')
                                 print('options', len(options), [x.text for x in options])
+                                print('questions', len(questions), [x.text for x in questions])
                                 return False
                         elif len(select_boxes) > 1:
                             print('multiple select boxes??', url)
+                            return False
+                        if len(select_boxes) == 0 and len(input_boxes) == 0:
+                            print('error found with zero input boxes or select boxes!', url)
                             return False
                 last_header = header.text
                 next_button.click()
@@ -417,6 +461,9 @@ def apply_easy_job(browser, url, excluded_companies):
                 next_button.click()
 
         time.sleep(0.05 + random.randint(0, 40) * 0.02)
+        if pause:
+            print('pausing for debugging purposes')
+            input()
         if hard_limit == 0:
             print('job hit page limit of 40. probably an uncaught error loop', url)
             return False

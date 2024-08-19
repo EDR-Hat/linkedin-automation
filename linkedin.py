@@ -280,7 +280,7 @@ def get_all_job_links(browser):
     listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
     return [x.get_attribute('href') for x in listofjobs]
 
-def apply_easy_job(browser, url):
+def apply_easy_job(browser, url, excluded_companies):
     browser.get(url)
     
     for y in range(10):
@@ -288,7 +288,17 @@ def apply_easy_job(browser, url):
         post_apply = browser.find_elements(By.CLASS_NAME, 'post-apply-timeline')
         if len(post_apply) > 0:
             return True
-        
+    
+    for y in range(10):
+        time.sleep(0.1)
+        company_card = browser.find_elements(By.CLASS_NAME, 'job-details-jobs-unified-top-card__company-name')
+        if len(company_card) > 0:
+            break
+    company_link = company_card[0].find_element(By.TAG_NAME, 'a').get_attribute('href')
+    if company_link.split('/')[4] in excluded_companies:
+        print('skipping this job because', company_link, ' is an excluded company', url)
+        return True
+
     for y in range(10):
         time.sleep(0.1)
         buttons = browser.find_elements(By.CLASS_NAME, 'jobs-apply-button')
@@ -300,7 +310,6 @@ def apply_easy_job(browser, url):
         easy[0].click()
         break
 
-    #check for the job search safety reminder box here
     time.sleep(1)
 
     last_header = ''

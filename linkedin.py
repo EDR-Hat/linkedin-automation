@@ -107,8 +107,12 @@ def setup_new_browser(base_path, arguments):
     #options.add_argument('--height=1440')
     #options.add_argument('--headless')
     #options.add_argument('--no-sandbox')
+    firefox_bin = "/snap/firefox/current/usr/lib/firefox/firefox"
+    firefoxdriver_bin = "/snap/firefox/current/usr/lib/firefox/geckodriver"
+    options.binary_location = firefox_bin
+    service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
 
-    browser = selenium.webdriver.Firefox(options=options)
+    browser = selenium.webdriver.Firefox(options=options, service=service)
 
     browser.get('https://www.linkedin.com/')
 
@@ -132,7 +136,12 @@ def save_cookies(base_path, browser):
     f = open(base_path + 'cookies.json', 'w')
     json.dump(browser.get_cookies(), f)
     f.close()
-    
+
+def scroll_all_heights(browser):
+    h = browser.execute_script("return document.body.scrollHeight")
+    for y in range(0, h, 500):
+        browser.execute_script("javascript:window.scrollTo(0, " + str(y) + ");")
+
 def scroll_to_bottom(browser, click_button=False, repetitions=-1):
     h = browser.execute_script("return document.body.scrollHeight")
     while True:
@@ -251,3 +260,152 @@ if __name__ == "__main__":
     base_path = sys.argv[1]
     browser = setup_new_browser(base_path)
     #print( connect_all_suggested_profiles( input('paste profile url: ').strip(), base_path ))
+
+def find_recent_jobs(base_path, browser):
+    browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
+    job_links = []
+    while True:
+        header = WebDriverWait(browser, 20).until(
+                EC.presence_of_element_located((By.CLASS_NAME, 'scaffold-layout__list-header')) )
+        for job in get_all_job_links(browser):
+            job_links.append(job)
+        next_button = browser.find_elements(By.CLASS_NAME, 'jobs-search-pagination__button--next')
+        if len(next_button) == 0:
+            break
+        next_button[0].click()
+    return job_links
+
+def get_all_job_links(browser):
+    scroll_all_heights(browser)
+    listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
+    return [x.get_attribute('href') for x in listofjobs]
+
+def apply_easy_job(browser, url):
+    browser.get(url)
+    
+    for y in range(10):
+        time.sleep(0.1)
+        post_apply = browser.find_elements(By.CLASS_NAME, 'post-apply-timeline')
+        if len(post_apply) > 0:
+            return True
+        
+    for y in range(10):
+        time.sleep(0.1)
+        buttons = browser.find_elements(By.CLASS_NAME, 'jobs-apply-button')
+        easy = [x for x in buttons if x.text == "Easy Apply"]
+        if len(easy) == 0:
+            if y == 9:
+                return False
+            continue
+        easy[0].click()
+        break
+
+    #check for the job search safety reminder box here
+    time.sleep(1)
+
+    last_header = ''
+
+    #no job has 20 pages in an easy apply app
+    hard_limit = 40
+
+    while True:
+        overlay = browser.find_element(By.CLASS_NAME, 'artdeco-modal-overlay')
+        try:
+            header = overlay.find_element(By.XPATH, '//div/form/div/div/h3')
+        except:
+            header = '-1'
+        next_button = overlay.find_element(By.CLASS_NAME, 'artdeco-button--primary')
+        match next_button.text:
+            case 'Submit application':
+                follow_checkbox = overlay.find_elements(By.ID, 'follow-company-checkbox')
+                if len(follow_checkbox) > 0:
+                    follow_checkbox[0].send_keys(Keys.SPACE)
+                next_button.send_keys(Keys.SPACE)
+                return True
+            
+            case 'Next' | 'Review':
+                if last_header == header.text:
+                    error_list = overlay.find_elements(By.CLASS_NAME, 'artdeco-inline-feedback__message')
+                    #print(len(error_list), [x.text for x in error_list])
+                    if len(error_list) == 0:
+                        print('header was the same but could not find any errors!')
+                        return False
+                    for error in error_list:
+                        entry_upper_elem = error.find_element(By.XPATH, '../../../.')
+                        input_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'input')
+                        select_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'select')
+                        questions = entry_upper_elem.find_elements(By.TAG_NAME, 'label')
+                        if len(input_boxes) == 1:
+                            if input_boxes[0].get_attribute('class').find('text-input--input') != -1:
+                                if error.text.find('between') != -1 and len(input_boxes) == 1:
+                                    entry = error.text.split('between')[1].split('and')[0]
+                                    input_boxes[0].send_keys(entry)
+                                elif error.text == 'Please enter a valid answer':
+                                    query = questions[0].text.lower()
+                                    if query.find('salary') != -1:
+                                        input_boxes[0].send_keys('1')
+                                    elif query.find('notice') != -1:
+                                        input_boxes[0].send_keys('2 weeks')
+                                    else:
+                                        print('unrecorded answer for:', query, url)
+                                        return False
+                                else:
+                                    print('len of 1 with different error', url)
+                                    print(error.text)
+                                    print('questions', len(questions), [x.text for x in questions])
+                                    print('input boxes', len(input_boxes), [x.text for x in input_boxes])
+                                    print('input boxes class', [x.get_attribute('class') for x in input_boxes])
+                                    print('select boxes', len(select_boxes), [x.text for x in select_boxes])
+                                    print('select boxes class', [x.get_attribute('class') for x in select_boxes])
+                                    return False
+                            else:
+                                print('non-text box input single element found', url)
+                                print(input_boxes[0].get_attribute('class'))
+                                return False
+                        elif len(input_boxes) == 2:
+                            print(error.text)
+                            print(len(input_boxes), [x.text for x in input_boxes])
+                            #need to get text for element to check for H1B questions
+                            #also need to line up the labels
+                            #input_boxes[0].send_keys(Keys.SPACE)
+                            print('job has radio button entry questions, need to debug later', url)
+                            return False
+                        if len(select_boxes) == 1:
+                            options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
+                            if len(options) == 3 or len(options) == 2:
+                                clicked = False
+                                for selection in options:
+                                    if selection.text.lower().find('yes') != -1:
+                                        if not selection.is_displayed():
+                                            selection.location_once_scrolled_into_view
+                                        selection.click()
+                                        clicked = True
+                                        break
+                                if not clicked:
+                                    print('no option marked yes', url)
+                                    print('options', len(options), [x.text for x in options])
+                                    return False
+                            else:
+                                print('length of options is over 3 or 2', url)
+                                print('options', len(options), [x.text for x in options])
+                                return False
+                        elif len(select_boxes) > 1:
+                            print('multiple select boxes??', url)
+                            return False
+                last_header = header.text
+                next_button.click()
+
+            case 'Continue applying':
+                print('linkedin safety warning', url)
+                return True
+
+            case _:
+                print('found different overlay', next_button.text)
+                print(last_header, header.text)
+                next_button.click()
+
+        time.sleep(0.05 + random.randint(0, 40) * 0.02)
+        if hard_limit == 0:
+            print('job hit page limit of 40. probably an uncaught error loop', url)
+            return False
+        hard_limit -= 1

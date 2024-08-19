@@ -20,6 +20,14 @@ if os.path.isfile(path + 'already_applied.json'):
 else:
     applied = set()
 
+#a set of manually added company urls that you do not want to send in future applications to
+#use this to exclude companies that come up as scam consulting firms etc
+if os.path.isfile(path + 'excluded_companies.json'):
+    f = open(path + 'excluded_companies.json', 'r')
+    bad_company = set(json.load(f))
+    f.close()
+else:
+    bad_company = set()
 
 args = []
 if len(sys.argv) > 2:
@@ -53,7 +61,7 @@ not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in appl
 
 for job in not_visited:
     try:
-        success = apply_easy_job(b, job)
+        success = apply_easy_job(b, job, excluded_companies)
     except Exception as e:
         print(e)
         success = False

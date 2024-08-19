@@ -1,8 +1,5 @@
 from linkedin import *
 
-#purpose of this script is to crawl your existing connections, save all seen profiles into a list
-# and limit the number of connections sent out to a certain amount
-
 if len(sys.argv) < 2:
     print('usage: {0} [directory path for saving information] [[arg #1 for browser] [arg #2 for browser]]'.format(sys.argv[0]))
     exit(1)

@@ -61,7 +61,7 @@ not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in appl
 
 for job in not_visited:
     try:
-        success = apply_easy_job(b, job, excluded_companies)
+        success = apply_easy_job(b, job, bad_company)
     except Exception as e:
         print(e)
         success = False

@@ -61,9 +61,7 @@ for job in not_visited:
         success = apply_easy_job(b, job, excluded_companies)
     except Exception as e:
         print(e)
-        success = False
-    if success:
-        applied.add(job.split('?')[0].split('/')[-2])
+    applied.add(job.split('?')[0].split('/')[-2])
 
 f = open(path + 'already_applied.json', 'w')
 json.dump(list(applied), f)

@@ -36,11 +36,11 @@ while True:
     try:
         b = setup_new_browser(path, args)
         break
-    except:
+    except Exception as e:
         if browser_startups == 0:
-            print("browser couldn't startup properly")
+            print("browser couldn't startup properly", e)
             exit(1)
-        print('hit browser setup error, trying again')
+        print('hit browser setup error, trying again', e)
         browser_startups -= 1
 
 job_list_startups = 20
@@ -58,7 +58,7 @@ not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in appl
 
 for job in not_visited:
     try:
-        success = apply_easy_job(b, job, excluded_companies)
+        success = apply_easy_job(b, job, bad_company)
     except Exception as e:
         print(e)
     applied.add(job.split('?')[0].split('/')[-2])

@@ -107,10 +107,13 @@ def setup_new_browser(base_path, arguments):
     #options.add_argument('--height=1440')
     #options.add_argument('--headless')
     #options.add_argument('--no-sandbox')
+    
     firefox_bin = "/snap/firefox/current/usr/lib/firefox/firefox"
+    
     firefoxdriver_bin = "/snap/firefox/current/usr/lib/firefox/geckodriver"
     options.binary_location = firefox_bin
     service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
+
 
     browser = selenium.webdriver.Firefox(options=options, service=service)
 
@@ -134,7 +137,9 @@ def read_cookies(base_path, browser):
 
 def save_cookies(base_path, browser):
     f = open(base_path + 'cookies.json', 'w')
-    json.dump(browser.get_cookies(), f)
+    cookies = browser.get_cookies()
+    if cookies != []:
+        json.dump(browser.get_cookies(), f)
     f.close()
 
 def scroll_all_heights(browser):

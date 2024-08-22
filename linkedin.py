@@ -112,6 +112,7 @@ def setup_new_browser(base_path, arguments):
     
     firefoxdriver_bin = "/snap/firefox/current/usr/lib/firefox/geckodriver"
     options.binary_location = firefox_bin
+    #service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin, log_output='geckolog.log', service_arts=['--log', 'debug'])
     service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
 
 

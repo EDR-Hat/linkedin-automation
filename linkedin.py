@@ -288,11 +288,13 @@ def get_all_job_links(browser):
 
 def apply_easy_job(browser, url, excluded_companies, pause=False):
     browser.get(url)
+    print('applying to', url)
     
     for y in range(10):
         time.sleep(0.1)
         post_apply = browser.find_elements(By.CLASS_NAME, 'post-apply-timeline')
         if len(post_apply) > 0:
+            print('already applied')
             return True
     
     for y in range(10):
@@ -325,10 +327,13 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
 
     while True:
         overlay = browser.find_element(By.CLASS_NAME, 'artdeco-modal-overlay')
-        try:
-            header = overlay.find_element(By.XPATH, '//div/form/div/div/h3')
-        except:
-            header = '-1'
+        headers = overlay.find_elements(By.TAG_NAME, 'h3')
+        heads = [x for x in headers if x.text != '']
+        if len(heads) > 0:
+            header = heads[0]
+        else:
+            print('error could not find header')
+            return True
         next_button = overlay.find_element(By.CLASS_NAME, 'artdeco-button--primary')
         match next_button.text:
             case 'Submit application':
@@ -344,18 +349,42 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                     #print(len(error_list), [x.text for x in error_list])
                     if len(error_list) == 0:
                         print('header was the same but could not find any errors!')
-                        return False
+                    else:
+                        # question_answers is a json dictionary with a list of error text
+                        # and keywords to match against. if all keywords are present in the question
+                        # then enter the keyword in the box, click the radio button with the label
+                        # or select the right drop down menu
+                        # like {"Please enter a valid answer": {("python", "experience"): "4"}}
+                        # declare singleton tuples like ("j",)
+                        # not sure if that is valid json
+
+                        f = open(path + 'question_answers.json', 'r')
+                        question_answers = json.load(f)
+                        f.close()
+
                     for error in error_list:
                         entry_upper_elem = error.find_element(By.XPATH, '../../../.')
                         input_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'input')
                         select_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'select')
                         questions = entry_upper_elem.find_elements(By.TAG_NAME, 'label')
+
+
                         if len(input_boxes) == 1:
+                            question_answers[error.text]
                             if input_boxes[0].get_attribute('class').find('text-input--input') != -1:
-                                if error.text.find('between') != -1:
-                                    entry = error.text.split('between')[1].split('and')[0]
-                                    input_boxes[0].send_keys(entry)
-                                elif error.text == 'Please enter a valid answer':
+                                if error.text not in question_answers:
+                                    print('unencountered error text')
+                                    f = open(path + 'error_answers.log', 'a')
+                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + '\n'
+                                    f.write(output)
+                                    return True
+
+                                for keywords in question_answers[error.text]:
+                                    words = ('',)
+
+
+                                if error.text == 'Please enter a valid answer':
+
                                     query = questions[0].text.lower()
                                     if query.find('salary') != -1:
                                         input_boxes[0].send_keys('1')
@@ -367,7 +396,7 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                                         input_boxes[0].send_keys('4')
                                     else:
                                         print('unrecorded answer for:', query, url)
-                                        return False
+                                        return True
                                 elif error.text == 'Enter a decimal number larger than 0.0':
                                     qs = questions[0].text.lower()
                                     #need to make a better function for this than an if else branch
@@ -387,7 +416,7 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                                         print('required exp above what i have')
                                         return True
                                     else:
-                                        print('question for this error', len(questions), [x.text for x in questions])
+                                        print('question for this error', len(questions), [x.text for x in questions], error.text)
                                         return False
                                 else:
                                     print('len of 1 with different error', url)

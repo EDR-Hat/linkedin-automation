@@ -354,9 +354,7 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                         # and keywords to match against. if all keywords are present in the question
                         # then enter the keyword in the box, click the radio button with the label
                         # or select the right drop down menu
-                        # like {"Please enter a valid answer": {("python", "experience"): "4"}}
-                        # declare singleton tuples like ("j",)
-                        # not sure if that is valid json
+                        # like {"Please enter a valid answer": [ {"answer": "0.0", "keywords": ["java", "experience"]}, {"answer": "4.0", "keywords": ["python", "experience"]} ] }
 
                         f = open(path + 'question_answers.json', 'r')
                         question_answers = json.load(f)
@@ -375,72 +373,69 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                                 if error.text not in question_answers:
                                     print('unencountered error text')
                                     f = open(path + 'error_answers.log', 'a')
-                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + '\n'
+                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in text box\n'
                                     f.write(output)
                                     return True
 
-                                for keywords in question_answers[error.text]:
-                                    words = ('',)
-
-
-                                if error.text == 'Please enter a valid answer':
-
-                                    query = questions[0].text.lower()
-                                    if query.find('salary') != -1:
-                                        input_boxes[0].send_keys('1')
-                                    elif query.find('notice') != -1:
-                                        input_boxes[0].send_keys('2 weeks')
-                                    elif query.find('work authorization') != -1 and query.find('legally') != -1 and query.find('legally') != -1:
-                                        input_boxes[0].send_keys('no')
-                                    elif query.find('python') != -1 and query.find('exp') != -1:
-                                        input_boxes[0].send_keys('4')
-                                    else:
-                                        print('unrecorded answer for:', query, url)
-                                        return True
-                                elif error.text == 'Enter a decimal number larger than 0.0':
-                                    qs = questions[0].text.lower()
-                                    #need to make a better function for this than an if else branch
-                                    if qs.find('salary') != -1:
-                                        input_boxes[0].send_keys('1.0')
-                                    elif qs.find('travel') != -1 and qs.find('percentage') != -1:
-                                        input_boxes[0].send_keys('20.0')
-                                    elif qs.find('python') != -1 and qs.find('exp') != -1:
-                                        input_boxes[0].send_keys('4.0')
-                                    elif qs.find('golang') != -1 and qs.find('exp') != -1:
-                                        print('required exp above what i have')
-                                        return True
-                                    elif qs.find('cxone') != -1 and qs.find('exp') != -1:
-                                        print('required exp above what i have')
-                                        return True
-                                    elif qs.find('front end') != -1 and qs.find('exp') != -1:
-                                        print('required exp above what i have')
-                                        return True
-                                    else:
-                                        print('question for this error', len(questions), [x.text for x in questions], error.text)
-                                        return False
+                                for qa_pair in question_answers[error.text]:
+                                    keywords = qa_pair['keywords']
+                                    l = 0
+                                    for word in keywords:
+                                        if qa_pair["case"] == "lower":
+                                            if questions[0].text.lower.find(word) == -1 and questions:
+                                                break
+                                        else:
+                                            if questions[0].text.find(word) == -1 and questions:
+                                                break
+                                        l += 1
+                                    if l == len(keywords):
+                                        #enter item
+                                        print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in text box')
+                                        input()
                                 else:
-                                    print('len of 1 with different error', url)
-                                    print(error.text)
-                                    print('questions', len(questions), [x.text for x in questions])
-                                    print('input boxes', len(input_boxes), [x.text for x in input_boxes])
-                                    print('input boxes class', [x.get_attribute('class') for x in input_boxes])
-                                    print('select boxes', len(select_boxes), [x.text for x in select_boxes])
-                                    print('select boxes class', [x.get_attribute('class') for x in select_boxes])
-                                    return False
+                                    print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in text box')
+                                    input()
+                                    return True
                             else:
                                 print('non-text box input single element found', url)
                                 print(input_boxes[0].get_attribute('class'))
-                                return False
+                                input()
+                                return True
+
                         elif len(input_boxes) == 2:
-                            print(error.text)
-                            print(len(input_boxes), [x.text for x in input_boxes])
-                            input()
-                            #need to get text for element to check for H1B questions
-                            #also need to line up the labels
-                            #input_boxes[0].send_keys(Keys.SPACE)
                             print('job has radio button entry questions, need to debug later', url)
-                            return False
-                        if len(select_boxes) == 1:
+                            input()
+                            return True
+                        elif len(select_boxes) == 1:
+                                if error.text not in question_answers:
+                                    print('unencountered error text')
+                                    f = open(path + 'error_answers.log', 'a')
+                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown\n'
+                                    f.write(output)
+                                    return True
+
+                                for qa_pair in question_answers[error.text]:
+                                    keywords = qa_pair['keywords']
+                                    l = 0
+                                    for word in keywords:
+                                        if qa_pair["case"] == "lower":
+                                            if questions[0].text.lower.find(word) == -1 and questions:
+                                                break
+                                        else:
+                                            if questions[0].text.find(word) == -1 and questions:
+                                                break
+                                        l += 1
+                                    if l == len(keywords):
+                                        #enter item
+                                        print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in dropdown')
+                                        input()
+                                else:
+                                    print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in dropdown')
+                                    input()
+                                    return True
+
+
+                            """
                             options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
                             qs = questions[0].text.lower()
                             if qs.find('vaccination') != -1 and qs.find('covid'):
@@ -474,6 +469,7 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                                 print('options', len(options), [x.text for x in options])
                                 print('questions', len(questions), [x.text for x in questions])
                                 return False
+                            """
                         elif len(select_boxes) > 1:
                             print('multiple select boxes??', url)
                             return False

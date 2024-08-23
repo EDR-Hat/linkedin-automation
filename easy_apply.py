@@ -49,7 +49,7 @@ b = startup_new_browser()
 job_list_startups = 20
 while True:
     try:
-        job_list = find_recent_jobs(path, b)
+        job_list = find_recent_jobs(path, b, 2)
         break
     except:
         if job_list_startups == 0:
@@ -60,7 +60,12 @@ while True:
 not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
 
 for job in not_visited:
-    apply_easy_job(b, job, bad_company, path)
+    try:
+        apply_easy_job(b, job, bad_company, path)
+    except Exception as e:
+        print('browser problem with exception:', e)
+        b.close()
+        b = startup_new_browser()
     applied.add(job.split('?')[0].split('/')[-2])
 
 f = open(path + 'already_applied.json', 'w')
@@ -68,4 +73,4 @@ json.dump(list(applied), f)
 f.close()
 
 save_cookies(path, b)
-b.close()
+b.quit()

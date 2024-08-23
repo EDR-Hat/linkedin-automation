@@ -112,15 +112,22 @@ def setup_new_browser(base_path, arguments):
     
     firefoxdriver_bin = "/snap/firefox/current/usr/lib/firefox/geckodriver"
     options.binary_location = firefox_bin
-    #service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin, log_output='geckolog.log', service_arts=['--log', 'debug'])
-    service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
+    service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin, log_output='geckolog.log', service_arts=['--log', 'debug'])
+    #service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
 
+    print('assigning browser now')
 
     browser = selenium.webdriver.Firefox(options=options, service=service)
 
+    print('getting homepage')
+
     browser.get('https://www.linkedin.com/')
 
+    print('adding cookies')
+
     read_cookies(base_path, browser)
+
+    print('setup new browser finished!')
 
     return browser
 
@@ -269,6 +276,7 @@ if __name__ == "__main__":
 
 def find_recent_jobs(base_path, browser):
     browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
+    print('in new joblist')
     job_links = []
     while True:
         header = WebDriverWait(browser, 20).until(
@@ -276,6 +284,7 @@ def find_recent_jobs(base_path, browser):
         for job in get_all_job_links(browser):
             job_links.append(job)
         next_button = browser.find_elements(By.CLASS_NAME, 'jobs-search-pagination__button--next')
+        print('at ', len(job_links), 'jobs in list')
         if len(next_button) == 0:
             break
         next_button[0].click()
@@ -286,7 +295,7 @@ def get_all_job_links(browser):
     listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
     return [x.get_attribute('href') for x in listofjobs]
 
-def apply_easy_job(browser, url, excluded_companies, pause=False):
+def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
     browser.get(url)
     print('applying to', url)
     
@@ -356,7 +365,7 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                         # or select the right drop down menu
                         # like {"Please enter a valid answer": [ {"answer": "0.0", "keywords": ["java", "experience"]}, {"answer": "4.0", "keywords": ["python", "experience"]} ] }
 
-                        f = open(path + 'question_answers.json', 'r')
+                        f = open(base_path + 'question_answers.json', 'r')
                         question_answers = json.load(f)
                         f.close()
 
@@ -368,11 +377,10 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
 
 
                         if len(input_boxes) == 1:
-                            question_answers[error.text]
                             if input_boxes[0].get_attribute('class').find('text-input--input') != -1:
                                 if error.text not in question_answers:
                                     print('unencountered error text')
-                                    f = open(path + 'error_answers.log', 'a')
+                                    f = open(base_path + 'error_answers.log', 'a')
                                     output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in text box\n'
                                     f.write(output)
                                     return True
@@ -391,48 +399,42 @@ def apply_easy_job(browser, url, excluded_companies, pause=False):
                                     if l == len(keywords):
                                         #enter item
                                         print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in text box')
-                                        input()
                                 else:
                                     print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in text box')
-                                    input()
                                     return True
                             else:
                                 print('non-text box input single element found', url)
                                 print(input_boxes[0].get_attribute('class'))
-                                input()
                                 return True
 
                         elif len(input_boxes) == 2:
                             print('job has radio button entry questions, need to debug later', url)
-                            input()
                             return True
                         elif len(select_boxes) == 1:
-                                if error.text not in question_answers:
-                                    print('unencountered error text')
-                                    f = open(path + 'error_answers.log', 'a')
-                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown\n'
-                                    f.write(output)
-                                    return True
+                            if error.text not in question_answers:
+                                print('unencountered error text')
+                                f = open(base_path + 'error_answers.log', 'a')
+                                output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown\n'
+                                f.write(output)
+                                return True
 
-                                for qa_pair in question_answers[error.text]:
-                                    keywords = qa_pair['keywords']
-                                    l = 0
-                                    for word in keywords:
-                                        if qa_pair["case"] == "lower":
-                                            if questions[0].text.lower.find(word) == -1 and questions:
-                                                break
-                                        else:
-                                            if questions[0].text.find(word) == -1 and questions:
-                                                break
-                                        l += 1
-                                    if l == len(keywords):
-                                        #enter item
-                                        print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in dropdown')
-                                        input()
-                                else:
-                                    print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in dropdown')
-                                    input()
-                                    return True
+                            for qa_pair in question_answers[error.text]:
+                                keywords = qa_pair['keywords']
+                                l = 0
+                                for word in keywords:
+                                    if qa_pair["case"] == "lower":
+                                        if questions[0].text.lower.find(word) == -1 and questions:
+                                            break
+                                    else:
+                                        if questions[0].text.find(word) == -1 and questions:
+                                            break
+                                    l += 1
+                                if l == len(keywords):
+                                    #enter item
+                                    print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in dropdown')
+                            else:
+                                print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in dropdown')
+                                return True
 
 
                             """

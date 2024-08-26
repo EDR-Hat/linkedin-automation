@@ -146,8 +146,9 @@ def read_cookies(base_path, browser):
 def save_cookies(base_path, browser):
     f = open(base_path + 'cookies.json', 'w')
     cookies = browser.get_cookies()
-    if cookies != []:
-        json.dump(browser.get_cookies(), f)
+    print('cookie length:', len(cookies))
+    if len(cookies) != 0:
+        json.dump(cookies, f)
     f.close()
 
 def scroll_all_heights(browser):

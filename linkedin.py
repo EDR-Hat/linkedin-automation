@@ -274,10 +274,11 @@ if __name__ == "__main__":
     browser = setup_new_browser(base_path)
     #print( connect_all_suggested_profiles( input('paste profile url: ').strip(), base_path ))
 
-def find_recent_jobs(base_path, browser):
+def find_recent_jobs(base_path, browser, pages):
     browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
     print('in new joblist')
     job_links = []
+    y = 0
     while True:
         header = WebDriverWait(browser, 20).until(
                 EC.presence_of_element_located((By.CLASS_NAME, 'scaffold-layout__list-header')) )
@@ -286,6 +287,9 @@ def find_recent_jobs(base_path, browser):
         next_button = browser.find_elements(By.CLASS_NAME, 'jobs-search-pagination__button--next')
         print('at ', len(job_links), 'jobs in list')
         if len(next_button) == 0:
+            break
+        y += 1
+        if y == pages:
             break
         next_button[0].click()
     return job_links
@@ -390,17 +394,22 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                     l = 0
                                     for word in keywords:
                                         if qa_pair["case"] == "lower":
-                                            if questions[0].text.lower.find(word) == -1 and questions:
+                                            if questions[0].text.lower().find(word) == -1:
                                                 break
                                         else:
-                                            if questions[0].text.find(word) == -1 and questions:
+                                            if questions[0].text.find(word) == -1:
                                                 break
                                         l += 1
                                     if l == len(keywords):
                                         #enter item
                                         print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in text box')
+                                        input_boxes[0].send_keys(qa_pair['answer'])
                                 else:
                                     print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in text box')
+                                    print('unencountered question text')
+                                    f = open(base_path + 'error_answers.log', 'a')
+                                    output = 'need answer to: ' + error.text + ' . question: ' + questions[0].text + ' in text box\n'
+                                    f.write(output)
                                     return True
                             else:
                                 print('non-text box input single element found', url)
@@ -423,7 +432,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                 l = 0
                                 for word in keywords:
                                     if qa_pair["case"] == "lower":
-                                        if questions[0].text.lower.find(word) == -1 and questions:
+                                        if questions[0].text.lower().find(word) == -1 and questions:
                                             break
                                     else:
                                         if questions[0].text.find(word) == -1 and questions:

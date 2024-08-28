@@ -403,7 +403,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                 if error.text not in question_answers:
                                     print('unencountered error text')
                                     f = open(base_path + 'error_answers.log', 'a')
-                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in text box\n'
+                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
                                     f.write(output)
                                     return True
 
@@ -426,7 +426,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                     print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in text box')
                                     print('unencountered question text')
                                     f = open(base_path + 'error_answers.log', 'a')
-                                    output = 'need answer to: ' + error.text + ' . question: ' + questions[0].text + ' in text box\n'
+                                    output = 'need answer to: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
                                     f.write(output)
                                     return True
                             else:
@@ -441,7 +441,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                             if error.text not in question_answers:
                                 print('unencountered error text')
                                 f = open(base_path + 'error_answers.log', 'a')
-                                output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown\n'
+                                output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown. ' + url + '\n'
                                 f.write(output)
                                 return True
 

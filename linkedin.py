@@ -316,10 +316,19 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
         company_card = browser.find_elements(By.CLASS_NAME, 'job-details-jobs-unified-top-card__company-name')
         if len(company_card) > 0:
             break
-    company_link = company_card[0].find_element(By.TAG_NAME, 'a').get_attribute('href')
-    if company_link.split('/')[4] in excluded_companies:
-        print('skipping this job because', company_link, ' is an excluded company', url)
-        return True
+    company_links = company_card[0].find_elements(By.TAG_NAME, 'a')
+    if len(company_links) > 0:
+        company_link = company_links[0].get_attribute('href')
+        if company_link.split('/')[4] in excluded_companies:
+            print('skipping this job because', company_link, ' is an excluded company', url)
+            return True
+    else:
+        company_names = company_card.find_elements(By.CLASS_NAME, 'company-name')
+        if len(company_names) > 0:
+            company_name = company_names[0].text
+            if company_name in excluded_companies:
+                print('skipping this job because', company_name, 'is an excluded company name', url)
+                return True
 
     for y in range(10):
         time.sleep(0.1)
@@ -327,12 +336,15 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
         easy = [x for x in buttons if x.text == "Easy Apply"]
         if len(easy) == 0:
             if y == 9:
+                print('could not find easy apply button skipping', url)
                 return False
             continue
         easy[0].click()
         break
 
-    time.sleep(1)
+    for y in range(40):
+        time.sleep(0.1)
+
 
     last_header = ''
 
@@ -346,8 +358,13 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
         if len(heads) > 0:
             header = heads[0]
         else:
-            print('error could not find header')
-            return True
+            headers = overlay.find_elements(By.TAG_NAME, 'h2')
+            heads = [x for x in headers if x.text != '']
+            if len(heads) > 0:
+                header - heads[0]
+            else:
+                print('still could not find header')
+                return True
         next_button = overlay.find_element(By.CLASS_NAME, 'artdeco-button--primary')
         match next_button.text:
             case 'Submit application':

@@ -300,7 +300,30 @@ def get_all_job_links(browser):
     listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
     return [x.get_attribute('href') for x in listofjobs]
 
+def check_answer(error_text, question_text, answer_dict):
+    if error_text not in answer_dict:
+        return False
+    ans = False
+    for qa_pair in answer_dict[error_text]:
+        keywords = qa_pair['keywords']
+        l = 0
+        for word in keywords:
+            if qa_pair["case"]:
+                if question_text.find(word) == -1:
+                    break
+            else:
+                if question_text.lower().find(word) == -1:
+                    break
+            l += 1
+        if l == len(keywords):
+            ans = True
+            break
+    if not ans:
+        return False
+    return qa_pair['answer']
+
 def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
+
     browser.get(url)
     print('applying to', url)
     
@@ -376,136 +399,105 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
             
             case 'Next' | 'Review':
                 if last_header == header.text:
+                    print('headers the same')
                     error_list = overlay.find_elements(By.CLASS_NAME, 'artdeco-inline-feedback__message')
                     #print(len(error_list), [x.text for x in error_list])
                     if len(error_list) == 0:
                         print('header was the same but could not find any errors!')
-                    else:
-                        # question_answers is a json dictionary with a list of error text
-                        # and keywords to match against. if all keywords are present in the question
-                        # then enter the keyword in the box, click the radio button with the label
-                        # or select the right drop down menu
-                        # like {"Please enter a valid answer": [ {"answer": "0.0", "keywords": ["java", "experience"]}, {"answer": "4.0", "keywords": ["python", "experience"]} ] }
+                    # question_answers is a json dictionary with a list of error text
+                    # and keywords to match against. if all keywords are present in the question
+                    # then enter the keyword in the box, click the radio button with the label
+                    # or select the right drop down menu
+                    # like {"Please enter a valid answer": [ {"answer": "0.0", "keywords": ["java", "experience"]}, {"answer": "4.0", "keywords": ["python", "experience"]} ] }
 
-                        f = open(base_path + 'question_answers.json', 'r')
-                        question_answers = json.load(f)
-                        f.close()
+                    f = open(base_path + 'question_answers.json', 'r')
+                    question_answers = json.load(f)
+                    f.close()
 
+                    r = 0
                     for error in error_list:
+                        print('fixing error:', error.text)
                         entry_upper_elem = error.find_element(By.XPATH, '../../../.')
                         input_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'input')
                         select_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'select')
                         questions = entry_upper_elem.find_elements(By.TAG_NAME, 'label')
 
-
                         if len(input_boxes) == 1:
-                            if input_boxes[0].get_attribute('class').find('text-input--input') != -1:
-                                if error.text not in question_answers:
-                                    print('unencountered error text')
+                            box_class = input_boxes[0].get_attribute('class')
+                            if box_class.find('text-input--input') != -1:
+                                answer = check_answer(error.text, questions[r].text, question_answers)
+                                if answer == False:
                                     f = open(base_path + 'error_answers.log', 'a')
-                                    output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
+                                    output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in text box. ' + url + '\n'
                                     f.write(output)
                                     return True
 
-                                for qa_pair in question_answers[error.text]:
-                                    keywords = qa_pair['keywords']
-                                    l = 0
-                                    for word in keywords:
-                                        if qa_pair["case"] == "lower":
-                                            if questions[0].text.lower().find(word) == -1:
-                                                break
-                                        else:
-                                            if questions[0].text.find(word) == -1:
-                                                break
-                                        l += 1
-                                    if l == len(keywords):
-                                        #enter item
-                                        print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in text box')
-                                        input_boxes[0].send_keys(qa_pair['answer'])
-                                else:
-                                    print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in text box')
-                                    print('unencountered question text')
-                                    f = open(base_path + 'error_answers.log', 'a')
-                                    output = 'need answer to: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
-                                    f.write(output)
-                                    return True
+                                print('answer found', answer, 'for error:', error.text, questions[r].text)
+                                input_boxes[0].send_keys(answer)
+                            elif box_class.find('fb-form-element__checkbox') != -1:
+                                print('clicking required checkbox with message:', error.text, '\nquestion:', questions[r].text)
+                                input_boxes[0].click()
                             else:
                                 print('non-text box input single element found', url)
                                 print(input_boxes[0].get_attribute('class'))
                                 return True
 
-                        elif len(input_boxes) == 2:
-                            print('job has radio button entry questions, need to debug later', url)
-                            return True
-                        elif len(select_boxes) == 1:
-                            if error.text not in question_answers:
-                                print('unencountered error text')
+                        elif len(input_boxes) >= 2:
+                            answer = check_answer(error.text, questions[r].text, question_answers)
+                            if answer == False:
                                 f = open(base_path + 'error_answers.log', 'a')
-                                output = 'error not seen before: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown. ' + url + '\n'
+                                output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in radio buttons. given these options: ' + str([x.text for x in input_boxes]) + ' ' + url + '\n'
                                 f.write(output)
                                 return True
 
-                            for qa_pair in question_answers[error.text]:
-                                keywords = qa_pair['keywords']
-                                l = 0
-                                for word in keywords:
-                                    if qa_pair["case"] == "lower":
-                                        if questions[0].text.lower().find(word) == -1 and questions:
-                                            break
-                                    else:
-                                        if questions[0].text.find(word) == -1 and questions:
-                                            break
-                                    l += 1
-                                if l == len(keywords):
-                                    #enter item
-                                    print('found answer to:', questions[0].text, ' as ', qa_pair['answer'], ' in dropdown')
-                            else:
-                                print('no answer found to question:', questions[0].text, 'for error:', error.text, ' in dropdown')
+                            print('answer found', answer, 'for error:', error.text, questions[r].text)
+                            clicked = False
+                            for option in input_boxes:
+                                if option.text == answer:
+                                    print("clicking on:", option.text)
+                                    option.click()
+                                    clicked = True
+                                    break
+                            if not clicked:
+                                print('could not find option in radio button to click on')
+                                print(len(input_boxes), [x.text for x in input_boxes])
+                                return True
+                        elif len(select_boxes) == 1:
+                            print('found a dropdown')
+                            answer = check_answer(error.text, questions[r].text, question_answers)
+
+                            if answer == False:
+                                f = open(base_path + 'error_answers.log', 'a')
+                                output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in dropdown. ' + url + '\n'
+                                f.write(output)
                                 return True
 
-
-                            """
+                            print('answer found', answer, 'for error:', error.text, questions[r].text)
+                            
                             options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
-                            qs = questions[0].text.lower()
-                            if qs.find('vaccination') != -1 and qs.find('covid'):
-                                clicked = False
-                                for selection in options:
-                                    if selection.text.lower().find('yes') != -1:
-                                        if not selection.is_displayed():
-                                            selection.location_once_scrolled_into_view
-                                        selection.click()
-                                        clicked = True
-                                        break
-                                if not clicked:
-                                    print('no option marked yes', url)
-                                    print('options', len(options), [x.text for x in options])
-                                    return False
-                            elif questions[0].text.find('OPT') != -1:
-                                clicked = False
-                                for selection in options:
-                                    if selection.text.lower().find('no') != -1:
-                                        if not selection.is_displayed():
-                                            selection.location_once_scrolled_into_view
-                                        selection.click()
-                                        clicked = True
-                                        break
-                                if not clicked:
-                                    print('no option marked yes', url)
-                                    print('options', len(options), [x.text for x in options])
-                                    return False
-                            else:
-                                print('unaccounted for question')
-                                print('options', len(options), [x.text for x in options])
-                                print('questions', len(questions), [x.text for x in questions])
-                                return False
-                            """
+                            clicked = False
+                            for selection in options:
+                                if selection.text == answer:
+                                    if not selection.is_displayed():
+                                        selection.location_once_scrolled_into_view
+                                    selection.click()
+                                    print('found and clicked:', selection.text)
+                                    clicked = True
+                                    break
+                            if not clicked:
+                                print('answer not found in drop down list!')
+                                print('options:', len(options), [x.text for x in options], 'attempted answer:', answer)
+                                return True
+                        
                         elif len(select_boxes) > 1:
-                            print('multiple select boxes??', url)
+                            print('multiple dropdown boxes??', url)
                             return False
                         if len(select_boxes) == 0 and len(input_boxes) == 0:
-                            print('error found with zero input boxes or select boxes!', url)
+                            print('error found with zero input boxes or drop down boxes!', url)
                             return False
+                        r += 1
                 last_header = header.text
+                print('clicking')
                 next_button.click()
 
             case 'Continue applying':

@@ -73,6 +73,10 @@ print('joblist crawl time:', j_time - b_time)
 b.quit()
 b = startup_new_browser()
 not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
+print(len(not_visited), ' unvisited job listings')
+if len(not_visited) == 0:
+    b.quit()
+    exit(0)
 
 for job in not_visited:
     try:
@@ -95,5 +99,4 @@ f = open(path + 'already_applied.json', 'w')
 json.dump(list(applied), f)
 f.close()
 
-save_cookies(path, b)
 b.quit()

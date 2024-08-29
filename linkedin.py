@@ -414,43 +414,44 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                     question_answers = json.load(f)
                     f.close()
 
-                    r = 0
                     for error in error_list:
                         print('fixing error:', error.text)
                         entry_upper_elem = error.find_element(By.XPATH, '../../../.')
                         input_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'input')
                         select_boxes = entry_upper_elem.find_elements(By.TAG_NAME, 'select')
                         questions = entry_upper_elem.find_elements(By.TAG_NAME, 'label')
+                        labels = entry_upper_elem.find_elements(By.TAG_NAME, 'span')
 
                         if len(input_boxes) == 1:
                             box_class = input_boxes[0].get_attribute('class')
                             if box_class.find('text-input--input') != -1:
-                                answer = check_answer(error.text, questions[r].text, question_answers)
+                                answer = check_answer(error.text, questions[0].text, question_answers)
                                 if answer == False:
                                     f = open(base_path + 'error_answers.log', 'a')
-                                    output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in text box. ' + url + '\n'
+                                    output = 'no answer for: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
                                     f.write(output)
                                     return True
 
-                                print('answer found', answer, 'for error:', error.text, questions[r].text)
+                                print('answer found', answer, 'for error:', error.text, questions[0].text)
                                 input_boxes[0].send_keys(answer)
                             elif box_class.find('fb-form-element__checkbox') != -1:
-                                print('clicking required checkbox with message:', error.text, '\nquestion:', questions[r].text)
-                                input_boxes[0].click()
+                                print('clicking required checkbox with message:', error.text, '\nquestion:', questions[0].text)
+                                input_boxes[0].send_keys(Keys.SPACE)
                             else:
                                 print('non-text box input single element found', url)
                                 print(input_boxes[0].get_attribute('class'))
                                 return True
 
                         elif len(input_boxes) >= 2:
-                            answer = check_answer(error.text, questions[r].text, question_answers)
+                            radio_labels = [x.find_element(By.XPATH, '../label') for x in input_boxes]
+                            answer = check_answer(error.text, questions[0].text, question_answers)
                             if answer == False:
                                 f = open(base_path + 'error_answers.log', 'a')
-                                output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in radio buttons. given these options: ' + str([x.text for x in input_boxes]) + ' ' + url + '\n'
+                                output = 'no answer for: ' + error.text + ' . question: ' + str([x.text for x in labels]) + ' in radio buttons. given these options: ' + str([x.text for x in questions]) + ' ' + url + '\n'
                                 f.write(output)
                                 return True
 
-                            print('answer found', answer, 'for error:', error.text, questions[r].text)
+                            print('answer found', answer, 'for error:', error.text, questions[0].text)
                             clicked = False
                             for option in input_boxes:
                                 if option.text == answer:
@@ -464,15 +465,16 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                 return True
                         elif len(select_boxes) == 1:
                             print('found a dropdown')
-                            answer = check_answer(error.text, questions[r].text, question_answers)
+                            answer = check_answer(error.text, questions[0].text, question_answers)
 
                             if answer == False:
                                 f = open(base_path + 'error_answers.log', 'a')
-                                output = 'no answer for: ' + error.text + ' . question: ' + questions[r].text + ' in dropdown. ' + url + '\n'
+                                options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
+                                output = 'no answer for: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown. options: ' + str([x.text for x in options]) + url + '\n'
                                 f.write(output)
                                 return True
 
-                            print('answer found', answer, 'for error:', error.text, questions[r].text)
+                            print('answer found', answer, 'for error:', error.text, questions[0].text)
                             
                             options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
                             clicked = False
@@ -495,7 +497,6 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                         if len(select_boxes) == 0 and len(input_boxes) == 0:
                             print('error found with zero input boxes or drop down boxes!', url)
                             return False
-                        r += 1
                 last_header = header.text
                 print('clicking')
                 next_button.click()

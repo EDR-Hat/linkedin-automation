@@ -70,11 +70,13 @@ while True:
         job_list_startups -= 1
 j_time = time.time()
 print('joblist crawl time:', j_time - b_time)
+b.close()
 b.quit()
 b = startup_new_browser()
 not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
 print(len(not_visited), ' unvisited job listings')
 if len(not_visited) == 0:
+    b.close()
     b.quit()
     exit(0)
 
@@ -85,6 +87,7 @@ for job in not_visited:
         print('browser problem with exception:', e)
         if str(e).lower().find('context discarded') != -1:
             try:
+                b.close()
                 b.quit()
             except:
                 pass
@@ -99,4 +102,5 @@ f = open(path + 'already_applied.json', 'w')
 json.dump(list(applied), f)
 f.close()
 
+b.close()
 b.quit()

@@ -91,7 +91,7 @@ def get_full_element_from_anchor(anchor_name, browser):
         link = None
     return (anc, link)
 
-def setup_new_browser(base_path, arguments):
+def setup_new_browser(base_path, arguments, sub=True):
 
     options = selenium.webdriver.firefox.options.Options()
     print(type(arguments), arguments)
@@ -112,7 +112,7 @@ def setup_new_browser(base_path, arguments):
     
     firefoxdriver_bin = "/snap/firefox/current/usr/lib/firefox/geckodriver"
     options.binary_location = firefox_bin
-    service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin, log_output='geckolog.log', service_arts=['--log', 'debug'])
+    service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin, log_output='geckolog.log', service_arts=['--log', 'debug'], use_subprocess=sub)
     #service = selenium.webdriver.firefox.service.Service(executable_path=firefoxdriver_bin)
 
     print('assigning browser now')

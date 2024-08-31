@@ -52,33 +52,45 @@ def startup_new_browser():
             browser_startups -= 1
     return b
 
+def get_fresh_joblist(browser, terms_list, applied):
+    all_jobs = []
+
+    for term in terms_list:
+        job_list_startups = 20
+        while True:
+            try:
+                job_list = find_recent_jobs(path, browser, -1, term)
+                break
+            except:
+                if job_list_startups == 0:
+                    print('could not get job list')
+                    exit(1)
+                job_list_startups -= 1
+        j_time = time.time()
+        not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
+        print(len(not_visited), ' unvisited job listings for term', term)
+        all_jobs = all_jobs + not_visited
+        if len(all_jobs) > 10:
+            break
+    print('joblist crawl time:', j_time - b_time)
+    print(len(all_jobs), ' total unvisited job listings')
+    if len(all_jobs) == 0:
+        b.close()
+        b.quit()
+        exit(0)
+    return all_jobs
+
 start_time = time.time()
 
 b = startup_new_browser()
 b_time = time.time()
 print('browser setup time:', time.time() - b_time)
+search_terms = ['software%20engineer', 'software%20developer', 'data%20analyst', 'python%20programmer', 'computer%20programmer']
+not_visited = get_fresh_joblist(b, search_terms, applied)
 
-job_list_startups = 20
-while True:
-    try:
-        job_list = find_recent_jobs(path, b, -1)
-        break
-    except:
-        if job_list_startups == 0:
-            print('could not get job list')
-            exit(1)
-        job_list_startups -= 1
-j_time = time.time()
-print('joblist crawl time:', j_time - b_time)
 b.close()
 b.quit()
 b = startup_new_browser()
-not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
-print(len(not_visited), ' unvisited job listings')
-if len(not_visited) == 0:
-    b.close()
-    b.quit()
-    exit(0)
 
 for job in not_visited:
     try:

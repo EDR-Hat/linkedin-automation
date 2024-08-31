@@ -85,7 +85,7 @@ start_time = time.time()
 b = startup_new_browser()
 b_time = time.time()
 print('browser setup time:', time.time() - b_time)
-search_terms = ['software%20engineer', 'software%20developer', 'data%20analyst', 'python%20programmer', 'computer%20programmer']
+search_terms = ['software%20engineer', 'software%20developer', 'software%20test%20engineer', 'automation%20engineer', 'ecommerce%20engineer', 'linux%20engineer', 'database%20administrator', 'application%20developer', 'data%20scientist', 'data%20analyst', 'python%20programmer', 'computer%20programmer', 'systems%20administrator', 'sysadmin', 'software%20quality%20assurance', 'site%20reliability%20engineer', 'devops', 'cybersecurity%20engineer', 'systems%20analyst']
 not_visited = get_fresh_joblist(b, search_terms, applied)
 
 b.close()

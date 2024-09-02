@@ -39,7 +39,7 @@ if os.path.isfile(path + 'exception_jobs.json'):
 else:
     exception_jobs = set()
 
-prev_jobs = applied + exception_jobs + error_jobs
+prev_jobs = applied | exception_jobs | error_jobs
 
 #a set of manually added company urls that you do not want to send in future applications to
 #use this to exclude companies that come up as scam consulting firms etc

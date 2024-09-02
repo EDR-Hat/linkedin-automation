@@ -345,7 +345,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
             print('skipping this job because', company_link, ' is an excluded company', url)
             return True
     else:
-        company_names = company_card.find_elements(By.CLASS_NAME, 'company-name')
+        company_names = company_card[0].find_elements(By.CLASS_NAME, 'company-name')
         if len(company_names) > 0:
             company_name = company_names[0].text
             if company_name in excluded_companies:
@@ -383,7 +383,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
             headers = overlay.find_elements(By.TAG_NAME, 'h2')
             heads = [x for x in headers if x.text != '']
             if len(heads) > 0:
-                header - heads[0]
+                header = heads[0]
             else:
                 print('still could not find header')
                 return False

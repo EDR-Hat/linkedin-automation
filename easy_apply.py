@@ -24,6 +24,23 @@ if os.path.isfile(path + 'already_applied.json'):
 else:
     applied = set()
 
+
+if os.path.isfile(path + 'error_jobs.json'):
+    f = open(path + 'error_jobs.json', 'r')
+    error_jobs = set(json.load(f))
+    f.close()
+else:
+    error_jobs = set()
+
+if os.path.isfile(path + 'exception_jobs.json'):
+    f = open(path + 'exception_jobs.json', 'r')
+    exception_jobs = set(json.load(f))
+    f.close()
+else:
+    exception_jobs = set()
+
+prev_jobs = applied + exception_jobs + error_jobs
+
 #a set of manually added company urls that you do not want to send in future applications to
 #use this to exclude companies that come up as scam consulting firms etc
 if os.path.isfile(path + 'excluded_companies.json'):
@@ -82,19 +99,21 @@ def get_fresh_joblist(browser, terms_list, applied):
 
 start_time = time.time()
 
+
+#need to add applications that complete to a list and then applications that had an error to their own list so that i can have the script trawl the ones that had errors again at a later time
+
 b = startup_new_browser()
-b_time = time.time()
-print('browser setup time:', time.time() - b_time)
 search_terms = ['software%20engineer', 'software%20developer', 'software%20test%20engineer', 'automation%20engineer', 'ecommerce%20engineer', 'linux%20engineer', 'database%20administrator', 'application%20developer', 'data%20scientist', 'data%20analyst', 'python%20programmer', 'computer%20programmer', 'systems%20administrator', 'sysadmin', 'software%20quality%20assurance', 'site%20reliability%20engineer', 'devops', 'cybersecurity%20engineer', 'systems%20analyst']
-not_visited = get_fresh_joblist(b, search_terms, applied)
+not_visited = get_fresh_joblist(b, search_terms, prev_jobs)
 
 b.close()
 b.quit()
 b = startup_new_browser()
 
 for job in not_visited:
+    success = None
     try:
-        apply_easy_job(b, job, bad_company, path)
+        success = apply_easy_job(b, job, bad_company, path)
     except Exception as e:
         print('browser problem with exception:', e)
         if str(e).lower().find('context discarded') != -1:
@@ -104,7 +123,13 @@ for job in not_visited:
             except:
                 pass
             b = startup_new_browser()
-    applied.add(job.split('?')[0].split('/')[-2])
+        exception_jobs.add(job.split('?')[0].split('/')[-2])
+        print('current runtime is:', time.time() - start_time)
+        continue
+    if success:
+        applied.add(job.split('?')[0].split('/')[-2])
+    else:
+        error_jobs.add(job.split('?')[0].split('/')[-2])
     print('current runtime is:', time.time() - start_time)
     if time.time() - start_time >= sleep_time:
         print('quitting because time was up')
@@ -112,6 +137,14 @@ for job in not_visited:
 
 f = open(path + 'already_applied.json', 'w')
 json.dump(list(applied), f)
+f.close()
+
+f = open(path + 'error_jobs.json', 'w')
+json.dump(list(error_jobs), f)
+f.close()
+
+f = open(path + 'exception_jobs.json', 'w')
+json.dump(list(exception_jobs), f)
 f.close()
 
 b.close()

@@ -94,10 +94,9 @@ def get_full_element_from_anchor(anchor_name, browser):
 def setup_new_browser(base_path, arguments, sub=True):
 
     options = selenium.webdriver.firefox.options.Options()
-    print(type(arguments), arguments)
     for arrg in arguments:
-        print('adding', arrg, type(arrg))
         options.add_argument(arrg)
+    print('added these args', arguments)
 
     # instead of hard coding arguments, since this might be used on different types of systems
     # you can set the arguments based on the system you are running the script on
@@ -275,8 +274,8 @@ if __name__ == "__main__":
     browser = setup_new_browser(base_path)
     #print( connect_all_suggested_profiles( input('paste profile url: ').strip(), base_path ))
 
-def find_recent_jobs(base_path, browser, pages):
-    browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=software%20engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
+def find_recent_jobs(base_path, browser, pages, terms):
+    browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=' + terms + '&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
     print('in new joblist')
     job_links = []
     y = 0
@@ -387,7 +386,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                 header - heads[0]
             else:
                 print('still could not find header')
-                return True
+                return False
         next_button = overlay.find_element(By.CLASS_NAME, 'artdeco-button--primary')
         match next_button.text:
             case 'Submit application':
@@ -430,7 +429,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                     f = open(base_path + 'error_answers.log', 'a')
                                     output = 'no answer for: ' + error.text + ' . question: ' + questions[0].text + ' in text box. ' + url + '\n'
                                     f.write(output)
-                                    return True
+                                    return False
 
                                 print('answer found', answer, 'for error:', error.text, questions[0].text)
                                 input_boxes[0].send_keys(answer)
@@ -440,7 +439,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                             else:
                                 print('non-text box input single element found', url)
                                 print(input_boxes[0].get_attribute('class'))
-                                return True
+                                return False
 
                         elif len(input_boxes) >= 2:
                             radio_labels = [x.find_element(By.XPATH, '../label') for x in input_boxes]
@@ -449,7 +448,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                 f = open(base_path + 'error_answers.log', 'a')
                                 output = 'no answer for: ' + error.text + ' . question: ' + str([x.text for x in labels]) + ' in radio buttons. given these options: ' + str([x.text for x in questions]) + ' ' + url + '\n'
                                 f.write(output)
-                                return True
+                                return False
 
                             print('answer found', answer, 'for error:', error.text, questions[0].text)
                             clicked = False
@@ -462,7 +461,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                             if not clicked:
                                 print('could not find option in radio button to click on')
                                 print(len(input_boxes), [x.text for x in input_boxes])
-                                return True
+                                return False
                         elif len(select_boxes) == 1:
                             print('found a dropdown')
                             answer = check_answer(error.text, questions[0].text, question_answers)
@@ -472,7 +471,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                                 options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
                                 output = 'no answer for: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown. options: ' + str([x.text for x in options]) + url + '\n'
                                 f.write(output)
-                                return True
+                                return False
 
                             print('answer found', answer, 'for error:', error.text, questions[0].text)
                             
@@ -489,7 +488,7 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
                             if not clicked:
                                 print('answer not found in drop down list!')
                                 print('options:', len(options), [x.text for x in options], 'attempted answer:', answer)
-                                return True
+                                return False
                         
                         elif len(select_boxes) > 1:
                             print('multiple dropdown boxes??', url)

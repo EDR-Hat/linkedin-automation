@@ -89,7 +89,6 @@ def get_fresh_joblist(browser, terms_list, applied):
         all_jobs = all_jobs + not_visited
         if len(all_jobs) > 10:
             break
-    print('joblist crawl time:', j_time - b_time)
     print(len(all_jobs), ' total unvisited job listings')
     if len(all_jobs) == 0:
         b.close()

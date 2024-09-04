@@ -35,7 +35,7 @@ def startup_new_browser():
     browser_startups = 30
     while True:
         try:
-            b = setup_new_browser(path, args, sub=False)
+            b = setup_new_browser(path, args)
             break
         except Exception as e:
             if browser_startups == 0:

@@ -151,4 +151,5 @@ while time.time() - start_time <= (sleep_time * 0.75) and len(search_terms) > 0:
     b.close()
     b.quit()
     for x in range(drops):
-        search_terms.pop(0)
+        if len(search_terms) > 0:
+            search_terms.pop(0)

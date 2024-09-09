@@ -275,7 +275,7 @@ if __name__ == "__main__":
     #print( connect_all_suggested_profiles( input('paste profile url: ').strip(), base_path ))
 
 def find_recent_jobs(base_path, browser, pages, terms):
-    browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2&f_JT=F&f_TPR=r86400&keywords=' + terms + '&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
+    browser.get('https://www.linkedin.com/jobs/search/?distance=3000&f_AL=true&f_E=2%2C3&f_JT=F&f_TPR=r86400&keywords=' + terms + '&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=DD')
     print('in new joblist')
     job_links = []
     y = 0
@@ -297,7 +297,7 @@ def find_recent_jobs(base_path, browser, pages, terms):
 def get_all_job_links(browser):
     scroll_all_heights(browser)
     listofjobs = browser.find_elements(By.CLASS_NAME, 'job-card-list__title')
-    return [x.get_attribute('href') for x in listofjobs]
+    return [(x.get_attribute('href'), x.text.split('\n')[0]) for x in listofjobs]
 
 def check_answer(error_text, question_text, answer_dict):
     if error_text not in answer_dict:

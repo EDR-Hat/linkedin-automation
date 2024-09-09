@@ -63,7 +63,7 @@ def get_fresh_joblist(browser, terms_list, applied):
                     exit(1)
                 job_list_startups -= 1
         j_time = time.time()
-        not_visited = [(x, term) for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
+        not_visited = [(x, term) for x in job_list if x[0].split('?')[0].split('/')[-2] not in applied]
         print(len(not_visited), ' unvisited job listings for term', term)
         all_jobs = all_jobs + not_visited
         if len(all_jobs) > 10:
@@ -76,11 +76,22 @@ def get_fresh_joblist(browser, terms_list, applied):
         exit(0)
     return all_jobs, terms_used
 
-def crawl_jobs(b, not_visited, bad_company, path):
+def crawl_jobs(b, not_visited, bad_company, excluded_titles, path):
     for job in not_visited:
+        skip = False
+        for bad_title in excluded_titles:
+            if job[0][1].lower().find(bad_title) != -1:
+                print('excluding job', job, ' because of bad title', bad_title)
+                skip = True
+                break
+        if skip:
+            # should make a separate skipped jobs file
+            applied.add(job[0][0].split('?')[0].split('/')[-2])
+            continue
+        
         success = None
         try:
-            success = apply_easy_job(b, job[0], bad_company, path, search_term=job[1])
+            success = apply_easy_job(b, job[0][0], bad_company, path, search_term=job[1])
         except Exception as e:
             print('browser problem with exception:', e)
             if str(e).lower().find('context discarded') != -1:
@@ -90,13 +101,13 @@ def crawl_jobs(b, not_visited, bad_company, path):
                 except:
                     pass
                 b = startup_new_browser()
-            exception_jobs.add(job[0].split('?')[0].split('/')[-2])
+            exception_jobs.add(job[0][0].split('?')[0].split('/')[-2])
             print('current runtime is:', time.time() - start_time)
             continue
         if success:
-            applied.add(job[0].split('?')[0].split('/')[-2])
+            applied.add(job[0][0].split('?')[0].split('/')[-2])
         else:
-            error_jobs.add(job[0].split('?')[0].split('/')[-2])
+            error_jobs.add(job[0][0].split('?')[0].split('/')[-2])
         print('current runtime is:', time.time() - start_time)
         if time.time() - start_time >= sleep_time:
             print('quitting because time was up')
@@ -143,10 +154,18 @@ while time.time() - start_time <= (sleep_time * 0.75) and len(search_terms) > 0:
     else:
         exception_jobs = set()
     prev_jobs = applied | exception_jobs | error_jobs
-    
+
+    if os.path.isfile(path + 'excluded_titles.json'):
+        f = open(path + 'excluded_titles.json', 'r')
+        excluded_titles = set(json.load(f))
+        f.close()
+    else:
+        excluded_titles = set()
+
+
     b = startup_new_browser()
     not_visited, drops = get_fresh_joblist(b, search_terms, prev_jobs)
-    crawl_jobs(b, not_visited, bad_company, path)
+    crawl_jobs(b, not_visited, bad_company, excluded_titles, path)
     print('time ratio', time.time() - start_time, sleep_time * 0.75 )
     b.close()
     b.quit()

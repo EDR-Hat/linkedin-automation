@@ -321,10 +321,15 @@ def check_answer(error_text, question_text, answer_dict):
         return False
     return qa_pair['answer']
 
-def apply_easy_job(browser, url, excluded_companies, base_path, pause=False):
+def apply_easy_job(browser, url, excluded_companies, base_path, pause=False, search_term=''):
 
     browser.get(url)
     print('applying to', url)
+    job_title = browser.find_element(By.CLASS_NAME, 'job-details-jobs-unified-top-card__job-title')
+    title = job_title.text
+    f = open('job_titles.txt', 'a')
+    f.write(title + ' searching ' + search_term + ' ' + url.split('?')[0] + '\n')
+    f.close()
     
     for y in range(10):
         time.sleep(0.1)

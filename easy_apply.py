@@ -63,7 +63,7 @@ def get_fresh_joblist(browser, terms_list, applied):
                     exit(1)
                 job_list_startups -= 1
         j_time = time.time()
-        not_visited = [x for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
+        not_visited = [(x, term) for x in job_list if x.split('?')[0].split('/')[-2] not in applied]
         print(len(not_visited), ' unvisited job listings for term', term)
         all_jobs = all_jobs + not_visited
         if len(all_jobs) > 10:
@@ -80,7 +80,7 @@ def crawl_jobs(b, not_visited, bad_company, path):
     for job in not_visited:
         success = None
         try:
-            success = apply_easy_job(b, job, bad_company, path)
+            success = apply_easy_job(b, job[0], bad_company, path, search_term=job[1])
         except Exception as e:
             print('browser problem with exception:', e)
             if str(e).lower().find('context discarded') != -1:
@@ -90,13 +90,13 @@ def crawl_jobs(b, not_visited, bad_company, path):
                 except:
                     pass
                 b = startup_new_browser()
-            exception_jobs.add(job.split('?')[0].split('/')[-2])
+            exception_jobs.add(job[0].split('?')[0].split('/')[-2])
             print('current runtime is:', time.time() - start_time)
             continue
         if success:
-            applied.add(job.split('?')[0].split('/')[-2])
+            applied.add(job[0].split('?')[0].split('/')[-2])
         else:
-            error_jobs.add(job.split('?')[0].split('/')[-2])
+            error_jobs.add(job[0].split('?')[0].split('/')[-2])
         print('current runtime is:', time.time() - start_time)
         if time.time() - start_time >= sleep_time:
             print('quitting because time was up')

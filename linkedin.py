@@ -318,6 +318,7 @@ def check_answer(error_text, question_text, answer_dict):
             ans = True
             break
     if not ans:
+        print('no matching keywords')
         return False
     return qa_pair['answer']
 
@@ -404,7 +405,8 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False, sea
             case 'Next' | 'Review':
                 if last_header == header.text:
                     print('headers the same')
-                    error_list = overlay.find_elements(By.CLASS_NAME, 'artdeco-inline-feedback__message')
+                    #error_list = overlay.find_elements(By.CLASS_NAME, 'artdeco-inline-feedback__message')
+                    error_list = [overlay.find_element(By.CLASS_NAME, 'artdeco-inline-feedback__message')]
                     #print(len(error_list), [x.text for x in error_list])
                     if len(error_list) == 0:
                         print('header was the same but could not find any errors!')
@@ -447,31 +449,37 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False, sea
                                 return False
 
                         elif len(input_boxes) >= 2:
-                            radio_labels = [x.find_element(By.XPATH, '../label') for x in input_boxes]
-                            answer = check_answer(error.text, questions[0].text, question_answers)
+                            radio_bttns = entry_upper_elem.find_elements(By.CLASS_NAME, 'fb-text-selectable__option')
+                            question__ = entry_upper_elem.find_elements(By.CLASS_NAME, 'fb-dash-form-element__label-title--is-required')
+                            if len(radio_bttns) == 0:
+                                print('found non-radio button element for multi input question', input_boxes[0].get_attribute('class'), url)
+                                return False
+                            question__ = question__[0].text.split('\n')[0]
+                            answer = check_answer(error.text, question__, question_answers)
+                            
                             if answer == False:
                                 f = open(base_path + 'error_answers.log', 'a')
-                                output = 'no answer for: ' + error.text + ' . question: ' + str([x.text for x in labels]) + ' in radio buttons. given these options: ' + str([x.text for x in questions]) + ' ' + url + '\n'
+                                output = 'no answer for: ' + error.text + ' . question: ' + question__ + ' in radio buttons. given these options: ' + str([x.text for x in radio_bttns]) + ' ' + url + '\n'
                                 f.write(output)
                                 return False
 
-                            print('answer found', answer, 'for error:', error.text, questions[0].text)
                             clicked = False
-                            for option in input_boxes:
+                            for option in radio_bttns:
                                 if option.text == answer:
-                                    print("clicking on:", option.text)
-                                    option.click()
+                                    print("clicking on radio button:", option.text, question__)
+                                    option.find_element(By.TAG_NAME, 'label').click()
                                     clicked = True
                                     break
                             if not clicked:
                                 print('could not find option in radio button to click on')
-                                print(len(input_boxes), [x.text for x in input_boxes])
+                                print(len(radio_bttns), [x.text for x in radio_bttns])
                                 return False
                         elif len(select_boxes) == 1:
                             print('found a dropdown')
                             answer = check_answer(error.text, questions[0].text, question_answers)
 
                             if answer == False:
+                                print('answer not found')
                                 f = open(base_path + 'error_answers.log', 'a')
                                 options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
                                 output = 'no answer for: ' + error.text + ' . question: ' + questions[0].text + ' in dropdown. options: ' + str([x.text for x in options]) + url + '\n'
@@ -479,15 +487,21 @@ def apply_easy_job(browser, url, excluded_companies, base_path, pause=False, sea
                                 return False
 
                             print('answer found', answer, 'for error:', error.text, questions[0].text)
+                            print('before options')
                             
                             options = select_boxes[0].find_elements(By.TAG_NAME, 'option')
+                            print('after options')
                             clicked = False
                             for selection in options:
+                                print('selection', selection)
                                 if selection.text == answer:
                                     if not selection.is_displayed():
+                                        print('scrolling selection')
                                         selection.location_once_scrolled_into_view
+                                    print('clicking selection')
+                                    txt = selection.text
                                     selection.click()
-                                    print('found and clicked:', selection.text)
+                                    print('found and clicked:', txt)
                                     clicked = True
                                     break
                             if not clicked:

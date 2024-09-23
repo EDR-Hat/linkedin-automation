@@ -128,7 +128,7 @@ def crawl_jobs(b, not_visited, bad_company, excluded_titles, path):
 
 start_time = time.time()
 
-search_terms = ['software%20engineer', 'software%20developer', 'software%20test%20engineer', 'automation%20engineer%20-electrical',  'database%20administrator', 'application%20developer', 'application%20engineer', 'data%20scientist', 'data%20analyst', 'python%20programmer', 'ecommerce%20engineer%20-sales%20-representative', 'computer%20programmer', 'linux%20engineer', 'systems%20administrator', 'sysadmin', 'software%20quality%20assurance', 'site%20reliability%20engineer', 'devops%20engineer', 'cybersecurity%20engineer', 'systems%20analyst']
+search_terms = ['software%20engineer', 'software%20developer', 'software%20test%20engineer', 'automation%20engineer',  'database%20administrator', 'application%20developer', 'application%20engineer', 'data%20analyst', 'python%20programmer', 'computer%20programmer', 'linux%20engineer', 'systems%20administrator', 'sysadmin', 'software%20quality%20assurance', 'site%20reliability%20engineer', 'devops%20engineer', 'cybersecurity%20engineer', 'systems%20analyst',  'systems%20engineer', 'software%20qa%20specialist', 'software%20quality%20assurance%20specialist',  'qa%20engineer','quality%20assurance%20engineer', 'mobile%20app%20developer', 'game%20developer', 'web%20developer',  'software%20test%20engineer','application%20developer', 'junior%20engineer']
 
 while time.time() - start_time <= (sleep_time * 0.75) and len(search_terms) > 0:
     print('entering main whlie loop')

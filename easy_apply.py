@@ -93,15 +93,14 @@ def crawl_jobs(b, not_visited, bad_company, excluded_titles, path):
         try:
             success = apply_easy_job(b, job[0][0], bad_company, path, search_term=job[1])
         except Exception as e:
-            print('browser problem with exception:', e)
-            if str(e).lower().find('context discarded') != -1:
-                try:
-                    b.close()
-                    b.quit()
-                except:
-                    pass
-                b = startup_new_browser()
             exception_jobs.add(job[0][0].split('?')[0].split('/')[-2])
+            print('browser problem with exception:', e)
+            try:
+                b.close()
+                b.quit()
+            except:
+                pass
+            b = startup_new_browser()
             print('current runtime is:', time.time() - start_time)
             continue
         if success:
